@@ -63,6 +63,7 @@
         .btn-reset { background-color: #ffc107; color: #333; }
         .btn-new { background-color: #007bff; }
         .btn-help { background-color: #6f42c1; }
+        .btn-help:hover { background-color: #5a32a3; transform: scale(1.05); }
         .nav-btn { background-color: #28a745; display: none; margin-top: 20px; }
         
         /* --- WORKSHEET STYLES --- */
@@ -130,13 +131,29 @@
 
         /* --- MODALS --- */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center; }
-        .modal-content { background:white; padding:30px; border-radius:15px; width:90%; max-width:600px; position:relative; max-height: 90vh; overflow-y: auto; }
+        .modal-content { background:white; padding:30px; border-radius:15px; width:90%; max-width:800px; position:relative; max-height: 90vh; overflow-y: auto; }
         .close-btn { position:absolute; top:15px; right:20px; font-size:28px; cursor:pointer; font-weight:bold; color:#aaa; }
 
         .cert-container { border: 5px solid #28a745; padding: 20px; background: #f0fff4; margin-top: 20px; text-align: center; }
         .cert-name { font-size: 28px; font-weight: bold; color: #28a745; margin: 10px 0; text-transform: capitalize; }
         
         .worksheet-section.hidden { display: none !important; padding: 0 !important; border: none !important; margin: 0 !important; }
+        
+        /* Nugget Styles */
+        .help-layout { display: flex; gap: 25px; align-items: flex-start; }
+        .nugget-container { flex-shrink: 0; text-align: center; }
+        .nugget-img { 
+            width: 150px; height: auto; 
+            border-radius: 50%; border: 4px solid #6f42c1; 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background-color: #fff;
+        }
+        .help-text-container { flex-grow: 1; text-align: left; }
+        
+        @media (max-width: 600px) {
+            .help-layout { flex-direction: column; align-items: center; }
+            .nugget-img { width: 100px; }
+        }
         
         .modal-fraction .number-text { font-size: 24px; }
         .modal-fraction .numerator-container, .modal-fraction .denominator-container {
@@ -157,7 +174,7 @@
     </div>
 
     <div class="controls">
-        <button class="btn-help" onclick="openHelp()">How do I do this?</button>
+        <button class="btn-help" onclick="openHelp()">How do I do this? Ask Nugget! 🐹</button>
         <button class="btn-reset" onclick="resetSection()">Reset</button>
         <button class="btn-new" onclick="generateCurrentPart()">New Problems</button>
     </div>
@@ -177,8 +194,16 @@
     <div id="helpModal" class="modal-overlay" onclick="if(event.target===this)closeModal('helpModal')">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('helpModal')">&times;</span>
-            <h2 id="helpTitle"></h2>
-            <div id="helpBody" style="font-size: 18px; line-height: 1.6;"></div>
+            <div class="help-layout">
+                <div class="nugget-container">
+                    <img src="Nugget.png" alt="Nugget the Hamster" class="nugget-img">
+                    <p style="font-weight:bold; color:#6f42c1; margin-top:5px;">Nugget says:</p>
+                </div>
+                <div class="help-text-container">
+                    <h2 id="helpTitle" style="text-align:left; margin-top:0;"></h2>
+                    <div id="helpBody" style="font-size: 18px; line-height: 1.6;"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -199,6 +224,8 @@
                     <div class="cert-name" id="certName"></div>
                     <div id="certTime"></div>
                     <div id="certCode" style="font-family:monospace; background:#eee; display:inline-block; padding:5px; margin-top:10px;"></div>
+                    <br>
+                    <div style="margin-top:15px; font-size:14px; color:#555;">Nugget is proud of you! 🐹</div>
                 </div>
             </div>
         </div>
@@ -261,7 +288,6 @@
                 row.dataset.targetNum = tN / div; 
                 row.dataset.targetDen = simpleDen;
                 
-                // Visual intermediate step in pop-up only, clean here
                 row.innerHTML = `
                     ${buildFrac(n1, den)} <span class="operator">${op}</span> ${buildFrac(n2, den)}
                     <span class="operator">=</span> ${buildFrac(0,0,'input')}
@@ -366,7 +392,7 @@
         }
 
         // ==========================================
-        // CHECKER LOGIC
+        // CHECKER LOGIC (SMART SIMPLIFICATION)
         // ==========================================
         function check(input) {
             const row = input.closest('.problem-row');
@@ -407,6 +433,7 @@
                 } else if(uN === tN && uD === tD) {
                     rN.classList.add('correct'); rD.classList.add('correct');
                 } else {
+                    // Equivalent but not simplified -> YELLOW
                     rN.classList.add('partial'); rD.classList.add('partial');
                     const simpGroup = row.querySelector('.simplification-group');
                     simpGroup.classList.remove('hidden-stage');
@@ -414,10 +441,20 @@
                     
                     const sN = allInputs[2]; const sD = allInputs[3];
                     if(sN && sD && sN.value && sD.value) {
-                         sN.classList.remove('correct','incorrect'); sD.classList.remove('correct','incorrect');
-                         if(parseInt(sN.value) === tN && parseInt(sD.value) === tD) {
-                             sN.classList.add('correct'); sD.classList.add('correct');
+                         sN.classList.remove('correct','incorrect','partial'); sD.classList.remove('correct','incorrect','partial');
+                         
+                         const sNVal = parseInt(sN.value);
+                         const sDVal = parseInt(sD.value);
+                         
+                         if(Math.abs((sNVal/sDVal) - (tN/tD)) < 0.0001) {
+                             if(sNVal === tN && sDVal === tD) {
+                                 sN.classList.add('correct'); sD.classList.add('correct');
+                             } else {
+                                 // Not fully simplified, but correct value -> Yellow
+                                 sN.classList.add('partial'); sD.classList.add('partial');
+                             }
                          } else {
+                             // Wrong value entirely
                              sN.classList.add('incorrect'); sD.classList.add('incorrect');
                          }
                     }
@@ -459,7 +496,6 @@
             const kN=inputs[0], kD=inputs[1], fN=inputs[2], fD=inputs[3];
             [kN,kD,fN,fD].forEach(el => el.classList.remove('correct','incorrect'));
             
-            // Flexible Equivalence check for Keep/Flip steps
             if(kN.value && kD.value) {
                 const kv = parseInt(kN.value)/parseInt(kD.value);
                 const kt = parseInt(row.dataset.keepN)/parseInt(row.dataset.keepD);
@@ -517,9 +553,17 @@
                         
                         const sN=inputs[startIndex+2], sD=inputs[startIndex+3];
                         if(sN && sD && sN.value && sD.value) {
-                            sN.classList.remove('correct','incorrect'); sD.classList.remove('correct','incorrect');
-                            if(parseInt(sN.value)===tN && parseInt(sD.value)===tD) {
-                                sN.classList.add('correct'); sD.classList.add('correct');
+                            sN.classList.remove('correct','incorrect','partial'); sD.classList.remove('correct','incorrect','partial');
+                            
+                            const sNVal = parseInt(sN.value);
+                            const sDVal = parseInt(sD.value);
+                            
+                            if(Math.abs((sNVal/sDVal) - (tN/tD)) < 0.0001) {
+                                if(sNVal===tN && sDVal===tD) {
+                                    sN.classList.add('correct'); sD.classList.add('correct');
+                                } else {
+                                    sN.classList.add('partial'); sD.classList.add('partial');
+                                }
                             } else {
                                 sN.classList.add('incorrect'); sD.classList.add('incorrect');
                             }
@@ -587,6 +631,7 @@
             document.getElementById(currentPart===4 ? 'btnFinish' : `btnPart${currentPart}`).style.display = 'none';
             currentPart = p;
             document.getElementById(`part${p}`).classList.remove('hidden');
+            
             updateProgressBar(p);
             
             const titles = {
@@ -599,7 +644,7 @@
             document.getElementById('subTitle').innerText = titles[p][1];
             generateCurrentPart();
         }
-
+        
         function updateProgressBar(p) {
             [1,2,3,4].forEach(i => {
                 const el = document.getElementById(`prog${i}`);
@@ -648,17 +693,17 @@
                 b.innerHTML = `
                     <p>You cannot add slices of different sizes! Make them the same size first.</p>
                     <p><strong>Step 1:</strong> Find a common multiple of the two denominators. (Multiplying the two numbers always works!)</p>
-                    <p>Example: 1/4 + 1/3. <br>Common Multiple: 4 &times; 3 = <strong>12</strong></p>
-                    <p><strong>Step 2:</strong> Change both fractions so they have this new denominator.</p>
-                    <p>1/4 becomes 3/12. 1/3 becomes 4/12.</p>
-                    <p><strong>Step 3:</strong> Add/Subtract the fractions like in Part 1.</p>
-                    <p>3/12 + 4/12 = 7/12</p>
+                    <p style="margin-left: 15px;">Example: 1/4 + 1/3. <br>Common Multiple: 4 &times; 3 = <strong>12</strong></p>
+                    <p><strong>Step 2:</strong> Convert to equivalent fractions and add like in Part 1.</p>
+                    <p style="font-size: 20px; text-align: center; font-weight: bold; color: #555;">
+                        1/4 + 1/3 = 3/12 + 4/12 = 7/12
+                    </p>
                 `;
             } else if(currentPart===3) {
                 t.innerText = "Multiplication";
                 b.innerHTML = `
-                    <p>Multiply the numerators (top &times; top)</p>
-                    <p>Multiply the denominators (bottom &times; bottom)</p>
+                    <p>Multiply the numerators (top &times; top)<br>
+                    Multiply the denominators (bottom &times; bottom)</p>
                     <div style="font-size:24px; text-align:center; padding:10px; background:#e3f2fd; border-radius:10px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap;">
                            ${buildModalFrac(1,2)} <span class="operator">&times;</span> ${buildModalFrac(3,4)}
                            <span class="operator">=</span>
