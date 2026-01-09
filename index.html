@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fraction Activity 2: Operations with Fractions</title>
+    <meta name="description" content="Interactive worksheet: Adding, Subtracting, Multiplying, and Dividing Fractions.">
+    
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1, h2 { color: #333; margin-bottom: 5px; text-align: center; }
+        p.subtitle { color: #666; margin-top: 0; margin-bottom: 20px; text-align: center; max-width: 800px; line-height: 1.6; }
+
+        /* --- PROGRESS BAR --- */
+        .progress-wrapper {
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 30px;
+            height: 30px;
+            background-color: #e9ecef;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .progress-segment {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #aaa;
+            background-color: #e9ecef;
+            border-right: 1px solid #fff;
+            transition: all 0.4s ease;
+        }
+        .progress-segment:last-child { border-right: none; }
+
+        /* States for Progress Bar */
+        .progress-segment.active { background-color: #007bff; color: white; box-shadow: inset 0 0 10px rgba(0,0,0,0.1); }
+        .progress-segment.done { background-color: #28a745; color: white; }
+
+        /* --- CONTROLS --- */
+        .controls { margin-bottom: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+
+        button {
+            padding: 10px 20px; font-size: 16px; cursor: pointer;
+            border: none; border-radius: 5px; transition: all 0.2s;
+            color: white; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-reset { background-color: #ffc107; color: #333; }
+        .btn-new { background-color: #007bff; }
+        .btn-help { background-color: #6f42c1; }
+        .nav-btn { background-color: #28a745; display: none; margin-top: 20px; }
+        
+        /* --- WORKSHEET STYLES --- */
+        .worksheet-section {
+            display: grid;
+            grid-template-columns: 1fr; 
+            gap: 30px;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 950px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+
+        .two-col-grid { grid-template-columns: 1fr 1fr; }
+        @media (max-width: 900px) { .two-col-grid { grid-template-columns: 1fr; } }
+
+        .problem-row {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start; 
+            flex-wrap: wrap; 
+            gap: 10px;
+            padding-bottom: 15px;
+            border-bottom: 1px dashed #eee;
+        }
+        .problem-row:last-child { border-bottom: none; }
+        .two-col-grid .problem-row { justify-content: center; }
+
+        .operator { font-size: 24px; font-weight: bold; color: #555; margin: 0 5px; }
+
+        .fraction { display: flex; flex-direction: column; align-items: center; margin: 0 2px; }
+        
+        .numerator-container {
+            border-bottom: 2px solid #333; padding-bottom: 3px; margin-bottom: 3px;
+            min-width: 30px; display: flex; justify-content: center;
+        }
+        .denominator-container { min-width: 30px; display: flex; justify-content: center; }
+
+        .number-text { font-size: 24px; font-weight: bold; color: #333; line-height: 1; padding: 0 5px; }
+
+        input[type="number"] {
+            width: 45px; height: 35px;
+            font-family: inherit; font-weight: bold; font-size: 20px;
+            color: #333; text-align: center;
+            border: 2px solid #ccc; border-radius: 5px;
+            outline: none; background-color: #fafafa;
+            -moz-appearance: textfield; 
+        }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input:focus { background-color: #fff; border-color: #666; }
+        
+        .whole-number-input { width: 50px; height: 40px; font-size: 24px; border: 2px solid #333; }
+
+        /* --- LOGIC CLASSES --- */
+        .hidden-stage { display: none !important; }
+        .visible-stage { display: flex !important; align-items: center; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .correct { background-color: #d4edda !important; border-color: #28a745 !important; }
+        .incorrect { background-color: #f8d7da !important; border-color: #dc3545 !important; }
+        .partial { background-color: #fff3cd !important; border-color: #ffc107 !important; }
+
+        /* --- MODALS --- */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:1000; justify-content:center; align-items:center; }
+        .modal-content { background:white; padding:30px; border-radius:15px; width:90%; max-width:600px; position:relative; max-height: 90vh; overflow-y: auto; }
+        .close-btn { position:absolute; top:15px; right:20px; font-size:28px; cursor:pointer; font-weight:bold; color:#aaa; }
+
+        .cert-container { border: 5px solid #28a745; padding: 20px; background: #f0fff4; margin-top: 20px; text-align: center; }
+        .cert-name { font-size: 28px; font-weight: bold; color: #28a745; margin: 10px 0; text-transform: capitalize; }
+        
+        .worksheet-section.hidden { display: none !important; padding: 0 !important; border: none !important; margin: 0 !important; }
+        
+        .modal-fraction .number-text { font-size: 24px; }
+        .modal-fraction .numerator-container, .modal-fraction .denominator-container {
+            width: auto; padding-left: 5px; padding-right: 5px; min-width: 30px; height: 35px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 id="mainTitle">Part 1: Adding & Subtracting</h1>
+    <p class="subtitle" id="subTitle">Same Denominators. Add/Subtract the tops, keep the bottom.</p>
+    
+    <div class="progress-wrapper">
+        <div class="progress-segment" id="prog1">Part 1</div>
+        <div class="progress-segment" id="prog2">Part 2</div>
+        <div class="progress-segment" id="prog3">Part 3</div>
+        <div class="progress-segment" id="prog4">Part 4</div>
+    </div>
+
+    <div class="controls">
+        <button class="btn-help" onclick="openHelp()">How do I do this?</button>
+        <button class="btn-reset" onclick="resetSection()">Reset</button>
+        <button class="btn-new" onclick="generateCurrentPart()">New Problems</button>
+    </div>
+
+    <div id="part1" class="worksheet-section two-col-grid"></div>
+    <div id="part2" class="worksheet-section hidden"></div>
+    <div id="part3" class="worksheet-section two-col-grid hidden"></div>
+    <div id="part4" class="worksheet-section hidden"></div>
+
+    <div style="text-align:center; height: 100px;">
+        <button id="btnPart1" class="nav-btn" onclick="switchPart(2)">Done! Go to Part 2 &rarr;</button>
+        <button id="btnPart2" class="nav-btn" onclick="switchPart(3)">Done! Go to Part 3 &rarr;</button>
+        <button id="btnPart3" class="nav-btn" onclick="switchPart(4)">Done! Go to Part 4 &rarr;</button>
+        <button id="btnFinish" class="nav-btn" onclick="openCertificate()">✅ Finish & Get Certificate</button>
+    </div>
+
+    <div id="helpModal" class="modal-overlay" onclick="if(event.target===this)closeModal('helpModal')">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('helpModal')">&times;</span>
+            <h2 id="helpTitle"></h2>
+            <div id="helpBody" style="font-size: 18px; line-height: 1.6;"></div>
+        </div>
+    </div>
+
+    <div id="certModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('certModal')">&times;</span>
+            <h2>Activity Complete!</h2>
+            <div id="certEntry">
+                <p>Enter your name for your certificate:</p>
+                <input type="text" id="nameInput" placeholder="Your Name" style="width:200px; height:40px; font-size:18px;">
+                <br><br>
+                <button class="btn-new" onclick="generateCert()">Generate</button>
+            </div>
+            <div id="certDisplay" style="display:none;">
+                <p><strong>Screenshot this box:</strong></p>
+                <div class="cert-container">
+                    <div>⭐ FRACTION MASTERY: OPERATIONS ⭐</div>
+                    <div class="cert-name" id="certName"></div>
+                    <div id="certTime"></div>
+                    <div id="certCode" style="font-family:monospace; background:#eee; display:inline-block; padding:5px; margin-top:10px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const COUNTS = { 1: 6, 2: 6, 3: 6, 4: 6 };
+        let currentPart = 1;
+
+        const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+
+        const buildFrac = (n, d, type='text') => {
+            let nC = type==='input' ? `<input type="number" placeholder="?" oninput="check(this)">` : `<span class="number-text">${n}</span>`;
+            let dC = type==='input' ? `<input type="number" placeholder="?" oninput="check(this)">` : `<span class="number-text">${d}</span>`;
+            return `<div class="fraction"><div class="numerator-container">${nC}</div><div class="denominator-container">${dC}</div></div>`;
+        };
+
+        const buildModalFrac = (n, d) => {
+             return `<div class="fraction modal-fraction"><div class="numerator-container"><span class="number-text">${n}</span></div><div class="denominator-container"><span class="number-text">${d}</span></div></div>`;
+        };
+
+        const buildSimpStage = (targetDen) => {
+            if(targetDen === 1) {
+                return `<div class="simplification-group hidden-stage" style="align-items:center;"><span class="operator">=</span><input type="number" class="whole-number-input" placeholder="?" oninput="check(this)"></div>`;
+            } else {
+                return `<div class="simplification-group hidden-stage" style="align-items:center;"><span class="operator">=</span>${buildFrac(0,0,'input')}</div>`;
+            }
+        };
+
+        // ==========================================
+        // GENERATORS
+        // ==========================================
+
+        function generatePart1() { // ADD/SUB SAME DENOM
+            const grid = document.getElementById('part1'); grid.innerHTML = '';
+            let hasSimplifiable = false;
+
+            for(let i=0; i<COUNTS[1]; i++) {
+                let den, n1, n2, isAdd, tN, div;
+                
+                if (i === 5 && !hasSimplifiable) { 
+                    den = 8; isAdd = true; n1 = 2; n2 = 2; tN = 4; div = 4;
+                } else {
+                    den = rand(4, 12);
+                    n1 = rand(1, den-1);
+                    isAdd = Math.random() > 0.5;
+                    n2 = isAdd ? rand(1, den) : rand(1, n1); 
+                    if(!isAdd && n1===n2) n2 = Math.max(1, n1-1); 
+                    tN = isAdd ? n1+n2 : n1-n2;
+                    div = gcd(tN, den);
+                }
+
+                if (div > 1) hasSimplifiable = true;
+                const simpleDen = den / div;
+                const op = isAdd ? '+' : '&minus;';
+                
+                const row = document.createElement('div');
+                row.className = 'problem-row';
+                row.dataset.targetNum = tN / div; 
+                row.dataset.targetDen = simpleDen;
+                
+                // Visual intermediate step in pop-up only, clean here
+                row.innerHTML = `
+                    ${buildFrac(n1, den)} <span class="operator">${op}</span> ${buildFrac(n2, den)}
+                    <span class="operator">=</span> ${buildFrac(0,0,'input')}
+                    ${buildSimpStage(simpleDen)}
+                `;
+                grid.appendChild(row);
+            }
+            updateCheck();
+        }
+
+        function generatePart2() { // ADD/SUB DIFF DENOM
+            const grid = document.getElementById('part2'); grid.innerHTML = '';
+            for(let i=0; i<COUNTS[2]; i++) {
+                let d1 = rand(2, 6), d2 = rand(2, 6);
+                while(d1 === d2) d2 = rand(2, 6);
+                let n1 = rand(1, d1-1), n2 = rand(1, d2-1);
+                const isAdd = Math.random() > 0.5;
+
+                if(!isAdd && (n1/d1 <= n2/d2)) { [n1, n2] = [n2, n1]; [d1, d2] = [d2, d1]; }
+
+                const rawNum = isAdd ? (n1*d2 + n2*d1) : (n1*d2 - n2*d1);
+                const rawDen = d1*d2;
+                const div = gcd(rawNum, rawDen);
+                const simpleNum = rawNum / div;
+                const simpleDen = rawDen / div;
+
+                const row = document.createElement('div');
+                row.className = 'problem-row';
+                row.dataset.origN1 = n1; row.dataset.origD1 = d1;
+                row.dataset.origN2 = n2; row.dataset.origD2 = d2;
+                row.dataset.targetNum = simpleNum; 
+                row.dataset.targetDen = simpleDen;
+
+                row.innerHTML = `
+                    ${buildFrac(n1, d1)} <span class="operator">${isAdd ? '+' : '&minus;'}</span> ${buildFrac(n2, d2)}
+                    <span class="operator">=</span>
+                    <div class="step1-group" style="display:flex; align-items:center">
+                        ${buildFrac(0,0,'input')} <span class="operator">${isAdd ? '+' : '&minus;'}</span> ${buildFrac(0,0,'input')}
+                    </div>
+                    <span class="operator">=</span>
+                    ${buildFrac(0,0,'input')}
+                    ${buildSimpStage(simpleDen)}
+                `;
+                grid.appendChild(row);
+            }
+            updateCheck();
+        }
+
+        function generatePart3() { // MULTIPLY
+            const grid = document.getElementById('part3'); grid.innerHTML = '';
+            for(let i=0; i<COUNTS[3]; i++) {
+                const n1=rand(1,5), d1=rand(n1+1,8);
+                const n2=rand(1,5), d2=rand(n2+1,8);
+                const tN = n1*n2, tD = d1*d2;
+                const div = gcd(tN, tD);
+                const simpleDen = tD / div;
+
+                const row = document.createElement('div');
+                row.className = 'problem-row';
+                row.dataset.targetNum = tN/div; row.dataset.targetDen = simpleDen;
+                
+                row.innerHTML = `
+                    ${buildFrac(n1, d1)} <span class="operator">&times;</span> ${buildFrac(n2, d2)}
+                    <span class="operator">=</span> ${buildFrac(0,0,'input')}
+                    ${buildSimpStage(simpleDen)}
+                `;
+                grid.appendChild(row);
+            }
+            updateCheck();
+        }
+
+        function generatePart4() { // DIVIDE
+            const grid = document.getElementById('part4'); grid.innerHTML = '';
+            for(let i=0; i<COUNTS[4]; i++) {
+                const n1=rand(1,5), d1=rand(n1+1,8);
+                const n2=rand(1,5), d2=rand(n2+1,8);
+                // Target is n1/d1 * d2/n2 (flipped)
+                const tN = n1*d2, tD = d1*n2;
+                const div = gcd(tN, tD);
+                const simpleDen = tD / div;
+
+                const row = document.createElement('div');
+                row.className = 'problem-row';
+                
+                // Store Keep/Flip expectations
+                row.dataset.keepN = n1; row.dataset.keepD = d1;
+                row.dataset.flipN = d2; row.dataset.flipD = n2;
+                
+                row.dataset.targetNum = tN/div; 
+                row.dataset.targetDen = simpleDen;
+                
+                row.innerHTML = `
+                    ${buildFrac(n1, d1)} <span class="operator">&divide;</span> ${buildFrac(n2, d2)}
+                    <span class="operator">=</span>
+                    ${buildFrac(0,0,'input')} <span class="operator">&times;</span> ${buildFrac(0,0,'input')}
+                    <span class="operator">=</span> ${buildFrac(0,0,'input')}
+                    ${buildSimpStage(simpleDen)}
+                `;
+                grid.appendChild(row);
+            }
+            updateCheck();
+        }
+
+        // ==========================================
+        // CHECKER LOGIC
+        // ==========================================
+        function check(input) {
+            const row = input.closest('.problem-row');
+            if(currentPart === 2) checkPart2Row(row);
+            else if(currentPart === 4) checkPart4Row(row);
+            else checkStandardRow(row);
+            updateCheck(); 
+        }
+
+        function checkStandardRow(row) {
+            const allInputs = row.querySelectorAll('input');
+            const rN = allInputs[0]; const rD = allInputs[1];
+            
+            rN.classList.remove('correct','partial','incorrect');
+            rD.classList.remove('correct','partial','incorrect');
+
+            if(!rN.value || !rD.value) return;
+
+            const tN = parseInt(row.dataset.targetNum);
+            const tD = parseInt(row.dataset.targetDen);
+            const uN = parseInt(rN.value);
+            const uD = parseInt(rD.value);
+
+            if(Math.abs((uN/uD) - (tN/tD)) < 0.0001) {
+                // If Target Denom is 1, even if user enters x/1 or x/x, mark partial
+                if(tD === 1) {
+                    rN.classList.add('partial'); rD.classList.add('partial');
+                    const simpGroup = row.querySelector('.simplification-group');
+                    simpGroup.classList.remove('hidden-stage');
+                    simpGroup.classList.add('visible-stage');
+                    
+                    const wN = allInputs[2];
+                    if(wN && wN.value) {
+                         wN.classList.remove('correct','incorrect');
+                         if(parseInt(wN.value) === tN) wN.classList.add('correct');
+                         else wN.classList.add('incorrect');
+                    }
+                } else if(uN === tN && uD === tD) {
+                    rN.classList.add('correct'); rD.classList.add('correct');
+                } else {
+                    rN.classList.add('partial'); rD.classList.add('partial');
+                    const simpGroup = row.querySelector('.simplification-group');
+                    simpGroup.classList.remove('hidden-stage');
+                    simpGroup.classList.add('visible-stage');
+                    
+                    const sN = allInputs[2]; const sD = allInputs[3];
+                    if(sN && sD && sN.value && sD.value) {
+                         sN.classList.remove('correct','incorrect'); sD.classList.remove('correct','incorrect');
+                         if(parseInt(sN.value) === tN && parseInt(sD.value) === tD) {
+                             sN.classList.add('correct'); sD.classList.add('correct');
+                         } else {
+                             sN.classList.add('incorrect'); sD.classList.add('incorrect');
+                         }
+                    }
+                }
+            } else {
+                rN.classList.add('incorrect'); rD.classList.add('incorrect');
+            }
+        }
+
+        function checkPart2Row(row) {
+            const inputs = row.querySelectorAll('input');
+            const i1n=inputs[0], i1d=inputs[1], i2n=inputs[2], i2d=inputs[3];
+            [i1n,i1d,i2n,i2d].forEach(el => el.classList.remove('correct','incorrect'));
+            
+            if(i1n.value && i1d.value && i2n.value && i2d.value) {
+                const uN1 = parseInt(i1n.value), uD1 = parseInt(i1d.value);
+                const uN2 = parseInt(i2n.value), uD2 = parseInt(i2d.value);
+                const oN1 = parseInt(row.dataset.origN1), oD1 = parseInt(row.dataset.origD1);
+                const oN2 = parseInt(row.dataset.origN2), oD2 = parseInt(row.dataset.origD2);
+
+                const commonDenom = (uD1 === uD2);
+                const equiv1 = Math.abs((uN1/uD1) - (oN1/oD1)) < 0.0001;
+                const equiv2 = Math.abs((uN2/uD2) - (oN2/oD2)) < 0.0001;
+
+                if(commonDenom && equiv1 && equiv2) {
+                    i1n.classList.add('correct'); i1d.classList.add('correct');
+                    i2n.classList.add('correct'); i2d.classList.add('correct');
+                } else {
+                    if(!equiv1) { i1n.classList.add('incorrect'); i1d.classList.add('incorrect'); }
+                    if(!equiv2) { i2n.classList.add('incorrect'); i2d.classList.add('incorrect'); }
+                    if(!commonDenom) { i1d.classList.add('incorrect'); i2d.classList.add('incorrect'); }
+                }
+            }
+            checkResultLogic(row, inputs, 4);
+        }
+
+        function checkPart4Row(row) {
+            const inputs = row.querySelectorAll('input');
+            const kN=inputs[0], kD=inputs[1], fN=inputs[2], fD=inputs[3];
+            [kN,kD,fN,fD].forEach(el => el.classList.remove('correct','incorrect'));
+            
+            // Flexible Equivalence check for Keep/Flip steps
+            if(kN.value && kD.value) {
+                const kv = parseInt(kN.value)/parseInt(kD.value);
+                const kt = parseInt(row.dataset.keepN)/parseInt(row.dataset.keepD);
+                if(Math.abs(kv - kt) < 0.0001) {
+                    kN.classList.add('correct'); kD.classList.add('correct');
+                } else {
+                    kN.classList.add('incorrect'); kD.classList.add('incorrect');
+                }
+            }
+            
+            if(fN.value && fD.value) {
+                const fv = parseInt(fN.value)/parseInt(fD.value);
+                const ft = parseInt(row.dataset.flipN)/parseInt(row.dataset.flipD);
+                if(Math.abs(fv - ft) < 0.0001) {
+                    fN.classList.add('correct'); fD.classList.add('correct');
+                } else {
+                    fN.classList.add('incorrect'); fD.classList.add('incorrect');
+                }
+            }
+
+            checkResultLogic(row, inputs, 4);
+        }
+
+        function checkResultLogic(row, inputs, startIndex) {
+            const rN = inputs[startIndex]; const rD = inputs[startIndex+1];
+            rN.classList.remove('correct','partial','incorrect'); rD.classList.remove('correct','partial','incorrect');
+            
+            if(rN.value && rD.value) {
+                const tN = parseInt(row.dataset.targetNum);
+                const tD = parseInt(row.dataset.targetDen);
+                const uN = parseInt(rN.value);
+                const uD = parseInt(rD.value);
+                
+                if(Math.abs((uN/uD) - (tN/tD)) < 0.0001) {
+                    // Check Whole Number Target
+                    if(tD === 1) {
+                        rN.classList.add('partial'); rD.classList.add('partial');
+                        const simpGroup = row.querySelector('.simplification-group');
+                        simpGroup.classList.remove('hidden-stage');
+                        simpGroup.classList.add('visible-stage');
+                        
+                        const wN = inputs[startIndex+2];
+                        if(wN && wN.value) {
+                            wN.classList.remove('correct','incorrect');
+                            if(parseInt(wN.value) === tN) wN.classList.add('correct');
+                            else wN.classList.add('incorrect');
+                        }
+                    } else if(uN === tN && uD === tD) {
+                        rN.classList.add('correct'); rD.classList.add('correct');
+                    } else {
+                        rN.classList.add('partial'); rD.classList.add('partial');
+                        const simpGroup = row.querySelector('.simplification-group');
+                        simpGroup.classList.remove('hidden-stage');
+                        simpGroup.classList.add('visible-stage');
+                        
+                        const sN=inputs[startIndex+2], sD=inputs[startIndex+3];
+                        if(sN && sD && sN.value && sD.value) {
+                            sN.classList.remove('correct','incorrect'); sD.classList.remove('correct','incorrect');
+                            if(parseInt(sN.value)===tN && parseInt(sD.value)===tD) {
+                                sN.classList.add('correct'); sD.classList.add('correct');
+                            } else {
+                                sN.classList.add('incorrect'); sD.classList.add('incorrect');
+                            }
+                        }
+                    }
+                } else {
+                    rN.classList.add('incorrect'); rD.classList.add('incorrect');
+                }
+            }
+        }
+
+        function updateCheck() {
+            const rows = document.querySelectorAll(`#part${currentPart} .problem-row`);
+            let allRowsDone = true;
+
+            rows.forEach(row => {
+                const allInputs = row.querySelectorAll('input');
+                let rowIsDone = true;
+
+                let stepCount = 0;
+                if(currentPart === 2) stepCount = 4;
+                if(currentPart === 4) stepCount = 4;
+
+                for(let i=0; i<stepCount; i++) {
+                    if(!allInputs[i].classList.contains('correct')) rowIsDone = false;
+                }
+
+                if(rowIsDone) {
+                    const rIdx = stepCount; 
+                    const rN = allInputs[rIdx]; 
+                    
+                    if(rN.classList.contains('correct')) {
+                        // done
+                    } else if (rN.classList.contains('partial')) {
+                        const tD = parseInt(row.dataset.targetDen);
+                        const sN = allInputs[rIdx+2];
+                        
+                        if(!sN) {
+                             rowIsDone = false; 
+                        } else {
+                            if(tD === 1) {
+                                if(!sN.classList.contains('correct')) rowIsDone = false;
+                            } else {
+                                const sD = allInputs[rIdx+3];
+                                if(!sN.classList.contains('correct') || !sD.classList.contains('correct')) rowIsDone = false;
+                            }
+                        }
+                    } else {
+                        rowIsDone = false;
+                    }
+                }
+                
+                if(!rowIsDone) allRowsDone = false;
+            });
+
+            const btnMap = {1:'btnPart1', 2:'btnPart2', 3:'btnPart3', 4:'btnFinish'};
+            const btn = document.getElementById(btnMap[currentPart]);
+            
+            if(allRowsDone && rows.length > 0) btn.style.display = 'inline-block';
+            else btn.style.display = 'none';
+        }
+
+        function switchPart(p) {
+            document.getElementById(`part${currentPart}`).classList.add('hidden');
+            document.getElementById(currentPart===4 ? 'btnFinish' : `btnPart${currentPart}`).style.display = 'none';
+            currentPart = p;
+            document.getElementById(`part${p}`).classList.remove('hidden');
+            updateProgressBar(p);
+            
+            const titles = {
+                1: ["Part 1: Adding & Subtracting", "Same Denominators. Add/Subtract tops, keep bottom."],
+                2: ["Part 2: Different Denominators", "1. Find a common multiple. 2. Convert fractions. 3. Solve."],
+                3: ["Part 3: Multiplication", "Multiply Top × Top and Bottom × Bottom."],
+                4: ["Part 4: Division", "Keep, Change, Flip! Then multiply."]
+            };
+            document.getElementById('mainTitle').innerText = titles[p][0];
+            document.getElementById('subTitle').innerText = titles[p][1];
+            generateCurrentPart();
+        }
+
+        function updateProgressBar(p) {
+            [1,2,3,4].forEach(i => {
+                const el = document.getElementById(`prog${i}`);
+                el.className = 'progress-segment';
+                if(i < p) el.classList.add('done');
+                if(i === p) el.classList.add('active');
+            });
+        }
+
+        function generateCurrentPart() {
+            if(currentPart===1) generatePart1();
+            if(currentPart===2) generatePart2();
+            if(currentPart===3) generatePart3();
+            if(currentPart===4) generatePart4();
+        }
+
+        function resetSection() { 
+            const inputs = document.querySelectorAll(`#part${currentPart} input`);
+            inputs.forEach(i => { i.value = ''; i.classList.remove('correct', 'incorrect', 'partial'); });
+            const hidden = document.querySelectorAll(`#part${currentPart} .simplification-group`);
+            hidden.forEach(h => { h.classList.add('hidden-stage'); h.classList.remove('visible-stage'); });
+            updateCheck();
+        }
+
+        function openHelp() {
+            const modal = document.getElementById('helpModal');
+            const t = document.getElementById('helpTitle');
+            const b = document.getElementById('helpBody');
+            
+            if(currentPart===1) {
+                t.innerText = "Adding/Subtracting Fractions with the Same Denominator";
+                b.innerHTML = `
+                    <p><strong>Rule:</strong> Add or subtract the numerators (tops), but keep the denominator (bottom) the same.</p>
+                    <div style="font-size:24px; text-align:center; padding:10px; background:#f0f0f0; border-radius:10px; display:flex; justify-content:center; align-items:center;">
+                        ${buildModalFrac(1,5)} <span class="operator">+</span> ${buildModalFrac(2,5)}
+                        <span class="operator">=</span>
+                        <div class="fraction modal-fraction">
+                            <div class="numerator-container" style="border-bottom:2px solid #333"><span class="number-text">1+2</span></div>
+                            <div class="denominator-container"><span class="number-text">5</span></div>
+                        </div>
+                        <span class="operator">=</span> ${buildModalFrac(3,5)}
+                    </div>
+                `;
+            } else if(currentPart===2) {
+                t.innerText = "Different Denominators";
+                b.innerHTML = `
+                    <p>You cannot add slices of different sizes! Make them the same size first.</p>
+                    <p><strong>Step 1:</strong> Find a common multiple of the two denominators. (Multiplying the two numbers always works!)</p>
+                    <p>Example: 1/4 + 1/3. <br>Common Multiple: 4 &times; 3 = <strong>12</strong></p>
+                    <p><strong>Step 2:</strong> Change both fractions so they have this new denominator.</p>
+                    <p>1/4 becomes 3/12. 1/3 becomes 4/12.</p>
+                    <p><strong>Step 3:</strong> Add/Subtract the fractions like in Part 1.</p>
+                    <p>3/12 + 4/12 = 7/12</p>
+                `;
+            } else if(currentPart===3) {
+                t.innerText = "Multiplication";
+                b.innerHTML = `
+                    <p>Multiply the numerators (top &times; top)</p>
+                    <p>Multiply the denominators (bottom &times; bottom)</p>
+                    <div style="font-size:24px; text-align:center; padding:10px; background:#e3f2fd; border-radius:10px; display:flex; justify-content:center; align-items:center; flex-wrap:wrap;">
+                           ${buildModalFrac(1,2)} <span class="operator">&times;</span> ${buildModalFrac(3,4)}
+                           <span class="operator">=</span>
+                           <div class="fraction modal-fraction">
+                                <div class="numerator-container" style="border-bottom:2px solid #333"><span class="number-text">1&times;3</span></div>
+                                <div class="denominator-container"><span class="number-text">2&times;4</span></div>
+                           </div>
+                           <span class="operator">=</span> ${buildModalFrac(3,8)}
+                    </div>
+                `;
+            } else {
+                t.innerText = "Division";
+                b.innerHTML = `
+                    <p><strong>K.C.F.</strong> method:</p>
+                    <p>1. <strong>Keep</strong> the first fraction.</p>
+                    <p>2. <strong>Change</strong> divided by (&divide;) to times (&times;).</p>
+                    <p>3. <strong>Flip</strong> the second fraction.</p>
+                    <p>Then just multiply!</p>
+                    <div style="font-size:20px; text-align:center; padding:10px; background:#e3f2fd; border-radius:10px;">
+                         <div style="display:flex; justify-content:center; align-items:center; flex-wrap:wrap;">
+                             ${buildModalFrac(1,2)} <span class="operator">&divide;</span> ${buildModalFrac(3,4)}
+                             <span class="operator">=</span>
+                             ${buildModalFrac(1,2)} <span class="operator">&times;</span> ${buildModalFrac(4,3)}
+                             <span class="operator">=</span> ${buildModalFrac(4,6)}
+                             <span class="operator">=</span> ${buildModalFrac(2,3)}
+                         </div>
+                    </div>
+                `;
+            }
+            modal.style.display = 'flex';
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function openCertificate() { document.getElementById('certModal').style.display='flex'; document.getElementById('certEntry').style.display='block'; document.getElementById('certDisplay').style.display='none'; }
+        
+        function generateCert() {
+            const n = document.getElementById('nameInput').value;
+            if(!n) return alert('Name required');
+            document.getElementById('certName').innerText = n;
+            document.getElementById('certTime').innerText = new Date().toLocaleString();
+            document.getElementById('certCode').innerText = "CODE: " + Math.floor(Math.random()*100000);
+            document.getElementById('certEntry').style.display='none';
+            document.getElementById('certDisplay').style.display='block';
+            
+            // Mark all segments green
+            [1,2,3,4].forEach(i => document.getElementById(`prog${i}`).className = 'progress-segment done');
+        }
+
+        window.onload = function() {
+            generatePart1();
+            updateProgressBar(1);
+        };
+
+    </script>
+</body>
+</html>
